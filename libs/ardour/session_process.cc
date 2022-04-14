@@ -44,8 +44,10 @@
 #include "ardour/debug.h"
 #include "ardour/disk_reader.h"
 #include "ardour/graph.h"
+#include "ardour/io_plug.h"
 #include "ardour/port.h"
 #include "ardour/process_thread.h"
+#include "ardour/rt_tasklist.h"
 #include "ardour/scene_changer.h"
 #include "ardour/session.h"
 #include "ardour/transport_fsm.h"
@@ -108,7 +110,15 @@ Session::process (pframes_t nframes)
 
 	_engine.main_thread()->get_buffers ();
 
+	if (_io_graph_chain[0]) {
+		_process_graph->process_io_plugs (_io_graph_chain[0], nframes, 0);
+	}
+
 	(this->*process_function) (nframes);
+
+	if (_io_graph_chain[1]) {
+		_process_graph->process_io_plugs (_io_graph_chain[1], nframes, 0);
+	}
 
 	/* realtime-safe meter-position and processor-order changes
 	 *
